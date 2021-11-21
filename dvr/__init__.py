@@ -1,6 +1,5 @@
 import os.path
 from . import methods
 
-__version__ = "0.0.2"
+__version__ = "0.1.1"
 __authors__ = ["Bartek Banachowicz", "Julia Bielecka", "Jakub Błażejowski"]
-__root__ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
