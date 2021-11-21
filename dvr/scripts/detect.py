@@ -48,7 +48,7 @@ def main(interactive: bool, output: str, mode: str, input_: str):
 
     for i, file in enumerate(files, start=1):
         ax = fig.add_subplot(h_size, w_size, i)
-        dvr.methods.segmentation(file, ax) if mode == "segmentation" else None
+        dvr.segmentation(file, ax) if mode == "segmentation" else None
         ax.set_axis_off()
 
     fig.savefig(output)
