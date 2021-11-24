@@ -1,8 +1,9 @@
 import math
-
+import pylab
 import numpy
 import numpy as np
 import matplotlib.figure
+import skimage
 from skimage import (
     color,
     filters,
@@ -33,8 +34,10 @@ def _segmentation(source: str, ax: matplotlib.figure.Figure):
     markers = np.full_like(image_grayscale, 1.0)
     markers[
         (image_color[..., 0] < 0.3) &
+        (image_color[..., 1] < 0.3) &
         (image_color[..., 1] < image_color[..., 0] + 0.3) &
         (image_color[..., 1] > image_color[..., 0] - 0.3) &
+        (image_color[..., 2] < 0.3) &
         (image_color[..., 2] < image_color[..., 0] + 0.3) &
         (image_color[..., 2] > image_color[..., 0] - 0.3)
     ] = 2.0
@@ -46,7 +49,6 @@ def _segmentation(source: str, ax: matplotlib.figure.Figure):
     seg = ndimage.binary_fill_holes(seg - 1)
     seg = morphology.erosion(seg, selem=morphology.disk(3))
     # seg = morphology.erosion(seg, selem=morphology.disk(2))
-    contours = measure.find_contours(seg)
 
     # Odczytanie średnich pól oczek
     labeled, _ = ndimage.label(seg)
@@ -57,23 +59,30 @@ def _segmentation(source: str, ax: matplotlib.figure.Figure):
 
     # Max odległośc między oczkami - przekątna kostki
     r = math.sqrt(area / math.pi)
-    max_distance = 8 * r * math.sqrt(2)
+    max_distance = 6 * r * math.sqrt(2)
 
     # Wykrywanie czy dane oczka należą do tej samej kostki
     dices = numpy.array([i for i in range(1, len(properties) + 1)])
     for i in range(len(properties)):
         for j in range(i + 1, len(properties)):
-            dist = math.sqrt((centers[i][0] - centers[j][0]) ** 2 + (centers[i][1] - centers[j][1]) ** 2)
+            dist = math.sqrt((centers[i][0] - centers[j][0])**2 + (centers[i][1] - centers[j][1])**2)
             if dist <= max_distance:
                 dices[j] = dices[i]
 
-    # liczenie kropek na tych samych kostkach
-    dice_numbers, bins = numpy.histogram(dices, bins=[i for i in range(1, dices.max() + 2)])
+    # Wyświetlanie i kolorowanie
+    dice_numbers, counts = np.array(np.unique(dices, return_counts=True))
+
+    cm = pylab.get_cmap("gist_rainbow")
+    cm = {j : cm(i / dice_numbers.size) for i, j in enumerate(dice_numbers)}
+
+    image_mask = numpy.zeros((image_grayscale.shape[0], image_grayscale.shape[1], 4), dtype=np.float64)
+    for i in range(len(properties)):
+        image_mask[properties[i].coords[:, 0], properties[i].coords[:, 1], :] = cm[dices[i]]
 
     ax.imshow(image_color)
-    for contour in contours:
-        ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
+    ax.imshow(image_mask)
 
-    print(dice_numbers)
-    # ax.set_title(f"Liczba oczek: {' '.join(map(str, dice_numbers))}")
+    print()
+    print('\n'.join([f"{counts[i]}: {cm[j]}" for i, j in enumerate(dice_numbers)]))
+
     ax.set_axis_off()
