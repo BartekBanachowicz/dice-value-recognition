@@ -10,7 +10,8 @@ from skimage import (
     io,
     measure,
     morphology,
-    segmentation
+    segmentation,
+    exposure
 )
 from scipy import ndimage
 
@@ -29,6 +30,11 @@ def _segmentation(source: str, ax: matplotlib.figure.Figure):
 
     image_color = image_color / 255
     image_grayscale = color.rgb2gray(image_color)
+
+    # Zmiana intensywności
+
+    percentile_low, percentile_high = np.percentile(image_grayscale, (0, 60))
+    image_grayscale = exposure.rescale_intensity(image_grayscale, out_range=(percentile_low, percentile_high))
 
     # Wyznaczanie markerów
     markers = np.full_like(image_grayscale, 1.0)
